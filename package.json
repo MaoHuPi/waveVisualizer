@@ -1,0 +1,14 @@
+{
+  "name": "wavevisualizer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.mjs",
+  "scripts": {
+    "render": "node src/index.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.11.2"
+  }
+}
