@@ -95,19 +95,20 @@ export default async function renderMotion({
 
 	let globalFrame = 0;
 	let lastUpdateTimes = 0;
-	function drawPath(path, timeSpan) {
+	function drawPath(path, startAt, timeSpan) {
 		let lastIndex = 0;
 		let startTime = globalFrame / fps;
 		let done = false;
 		function update() {
 			if (done) return;
 			let currentTime = globalFrame / fps;
-			let targetIndex = Math.max(Math.floor((currentTime - startTime) / timeSpan * path.length), 0);
+			if (currentTime - startTime < startAt) return;
+			let targetIndex = Math.max(Math.floor((currentTime - (startTime + startAt)) / timeSpan * path.length), 0);
 			for (let i = lastIndex; i < targetIndex; i++) {
 				if (i + 1 <= path.length - 1) lineTo(data, path[i].map(n => Math.round(n * (1 / scale))), path[i + 1].map(n => Math.round(n * (1 / scale))));
 			}
 			lastIndex = targetIndex;
-			if (currentTime - startTime > timeSpan) done = true;;
+			if (currentTime - startTime > startAt + timeSpan) done = true;
 		}
 		return update;
 	}
@@ -116,7 +117,8 @@ export default async function renderMotion({
 		if ('src' in item && item.src) {
 			item.path = JSON.parse(fs.readFileSync(item.src, 'utf8'));
 		}
-		item.update = drawPath(item.path, item.timeSpan, item.updateTimeout);
+		if (item.startAt === undefined) item.startAt = 0;
+		item.update = drawPath(item.path, item.startAt, item.timeSpan);
 	}
 
 	for (let frame = 0; frame < length * fps; frame++) {
