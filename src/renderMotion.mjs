@@ -139,5 +139,7 @@ export default async function renderMotion({
 		await writeImage(`./out/${name}/frame_${frame}.png`, cvs);
 	}
 
-	if (callMakeVideo) execSync(`"./makeVideo.bat" "${name}" ${fps}`);
+	if (callMakeVideo) {
+		execSync(`"./makeVideo.bat" "${name}" ${fps}`);
+	}
 }

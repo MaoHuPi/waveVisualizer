@@ -4,7 +4,8 @@
 
 import fs from 'node:fs';
 import renderMotion from './renderMotion.mjs';
-import pathFromImage from './pathFromImage.mjs';
+import { loadImage } from 'canvas';
+import { analyzePathFromImage, analyzeTurningPointOfPath, getPathFromSvg } from './pathProcess.mjs';
 
 let motion = {
 	test_star: () => {
@@ -59,9 +60,27 @@ let motion = {
 	,
 	catAndPath: async () => {
 		let image = await loadImage('image/cat.png');
-		let path = pathFromImage({
-			image: image
-		}).sort((a, b) => b.length - a.length)[2].pointList;
+
+		/* analize currently */
+		// let path = (await analyzePathFromImage({
+		// 	image: image
+		// })).sort((a, b) => b.length - a.length)[2].pointList;
+		// console.log(analyzeTurningPointOfPath(path, 2e2));
+		/* save path result */
+		// fs.writeFile('data/cat.json', JSON.stringify(
+		// 	(await analyzePathFromImage({
+		// 		image: await loadImage('image/cat.png')
+		// 	})).sort((a, b) => b.length - a.length)[2].pointList
+		// ), err => {
+		// 	if (err) console.error(err);
+		// });
+		/* load path result */
+		let path = JSON.parse(await fs.readFileSync('data/cat.json', 'utf8'));
+
+		let turningPointData = analyzeTurningPointOfPath(path, 50);
+		console.log(turningPointData);
+		let turningPoint = turningPointData.anticlockwise2clockwise[13];
+		if (turningPoint !== undefined) path = path.splice(0, turningPoint);
 		renderMotion({
 			name: 'catAndPath',
 			laserHue: 120,
@@ -91,14 +110,53 @@ let motion = {
 				}
 			]
 		});
+		// renderMotion({
+		// 	name: 'catAndPath',
+		// 	laserHue: 120,
+		// 	callMakeVideo: false,
+
+		// 	outputScale: 0.5,
+		// 	pathScale: image.height / 1080,
+
+		// 	width: 1920,
+		// 	height: 1080,
+		// 	length: 2,
+		// 	fps: 1,
+		// 	updateTimeout: 1,
+
+		// 	renderQueue: [
+		// 		{
+		// 			path: path, startAt: 0, timeSpan: 1, updateTimeout: 1
+		// 		}
+		// 	]
+		// });
+	}
+	,
+	hbd: async () => {
+		let pathList = await getPathFromSvg({ svg: 'image/hbd.svg' });
+		renderMotion({
+			name: 'hbd',
+			laserHue: 120,
+			callMakeVideo: true,
+
+			outputScale: 0.5,
+			pathScale: 1,
+
+			width: 1080,
+			height: 1080,
+			length: 6,
+			fps: 30,
+			updateTimeout: 0.3,
+
+			renderQueue: [
+				...new Array(45).fill(0).map((n, i) =>
+					pathList.map(path => ({
+						path: path, startAt: i * (4.5 / 45), timeSpan: 0.5, updateTimeout: 0.3
+					}))
+				).reduce((s, n) => s ? [...s, ...n] : n)
+			]
+		});
 	}
 };
 
-// fs.writeFile('data/path.json', JSON.stringify(
-// 	pathFromImage({
-// 		image: await loadImage('image/cat.png')
-// 	}).sort((a, b) => b.length - a.length)[2].pointList
-// ), err => {
-// 	if (err) console.error(err);
-// });
-motion.catAndPath();
+motion.hbd();
